@@ -12,6 +12,14 @@ const cryptoRoutes = require("./routes/cryptoRoutes");
 
 const app = express();
 
+// Validate required environment variables
+const requiredEnv = ["JWT_SECRET", "MONGO_URI"];
+requiredEnv.forEach((key) => {
+  if (!process.env[key]) {
+    console.warn(`WARNING: ${key} is not set. This is required for proper app behavior.`);
+  }
+});
+
 // Connect to database
 connectDB();
 
@@ -44,9 +52,18 @@ app.use("/api/user", userRoutes);
 app.use("/api/crypto", cryptoRoutes);
 
 // Port
-const PORT = 5050;
+const PORT = process.env.PORT || 5050;
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Global error handling
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
