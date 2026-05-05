@@ -1,4 +1,5 @@
 ﻿console.log("SERVER FILE LOADED AT", new Date());
+
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
@@ -16,12 +17,9 @@ const app = express();
 const requiredEnv = ["JWT_SECRET", "MONGO_URI"];
 requiredEnv.forEach((key) => {
   if (!process.env[key]) {
-    console.warn(`WARNING: ${key} is not set. This is required for proper app behavior.`);
+    console.warn(`${key} is not set`);
   }
 });
-
-// Connect to database
-connectDB();
 
 // Middleware
 app.use(express.json());
@@ -34,36 +32,36 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// New hello route
-app.post("/hello", (req, res) => {
-  res.json({ msg: "Hello world" });
-});
-
-// Debug test route
-app.post("/test", (req, res) => {
-  console.log("Test endpoint hit");
-  console.log("Body:", req.body);
-  res.json({ success: true, body: req.body });
-});
-
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/crypto", cryptoRoutes);
 
-// Port
-const PORT = process.env.PORT || 5050;
+// Start server ONLY after DB connects
+const startServer = async () => {
+  try {
+    await connectDB();
 
-// Start server
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    console.log("MongoDB connected successfully");
+
+    const PORT = process.env.PORT || 5050;
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Global error handling
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
 });
